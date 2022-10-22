@@ -1,14 +1,16 @@
 ﻿using HtmlAgilityPack;
+using Newtonsoft.Json;
 using System.Globalization;
 using System.Text;
 using System.Web;
 
-var dialogues = Directory.EnumerateDirectories(@"C:\Users\kolya5544\Downloads\Archive\messages").ToList();
+var dialogues = Directory.EnumerateDirectories(@"C:\Users\kolya5544\Downloads\Archive (2)\messages").ToList();
 var myId = 127172472;
 
 Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
-List<Dialogue> vkmsgs = new();
+VKExport vkmsgs = new();
+vkmsgs.timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
 dialogues.ForEach((z) =>
 {
     string dirname = z.Split('\\').Last();
@@ -21,6 +23,8 @@ dialogues.ForEach((z) =>
         messages = new()
     };
 
+    string title = null;
+
     var msgFragments = Directory.EnumerateFiles(z).ToList();
     msgFragments.ForEach((x) =>
     {
@@ -29,7 +33,13 @@ dialogues.ForEach((z) =>
         HtmlDocument htmlSnippet = new HtmlDocument();
         htmlSnippet.LoadHtml(contents);
 
-        List<Message> messages = new();
+        if (title is null)
+        {
+            var l = htmlSnippet.DocumentNode.SelectSingleNode("//div[@class='ui_crumb']");
+            title = l.InnerText;
+            Console.WriteLine(title);
+        }
+
         var msgContainer = htmlSnippet.DocumentNode.SelectSingleNode("//div[@class='wrap_page_content']");
         msgContainer.ChildNodes.ToList().ForEach((c) =>
         {
@@ -79,22 +89,53 @@ dialogues.ForEach((z) =>
 
             // figuring out body
             var txt = header.NextSibling;
-            if (txt is not null && txt.NextSibling is not null && txt.NextSibling.FirstChild.Name == "#text")
+            if (txt is not null && txt.NextSibling is not null && txt.NextSibling.FirstChild is not null && txt.NextSibling.FirstChild.Name == "#text")
             {
                 msg.body = txt.NextSibling.FirstChild.InnerText.Trim('\n');
             }
-            
+
             // figuring out whether there are attachments
-            // todo... just like everything else :D
+            var attachments = c.SelectNodes(".//div[@class='attachment']");
+            msg.attachment = new();
+            if (attachments is not null)
+            {
+                attachments.ToList().ForEach((c) =>
+                {
+                    var desc = c.SelectSingleNode(".//div[@class='attachment__description']");
+                    var link = c.SelectSingleNode(".//a[@class='attachment__link']");
+
+                    var dText = desc.InnerText;
+                    if (string.IsNullOrEmpty(dText) || dText.Length < 4) dText = "Неизвестно";
+                    var url = link is null ? "N/A" : link.GetAttributeValue("href", "N/A");
+
+                    msg.attachment.Add(new Attachment()
+                    {
+                        name = dText,
+                        url = url
+                    });
+                });
+            }
+
+            dlg.messages.Add(msg);
         });
     });
+    dlg.title = title;
+    vkmsgs.dialogues.Add(dlg);
 });
+File.WriteAllText("export.json", JsonConvert.SerializeObject(vkmsgs));
+Console.WriteLine("Export complete!");
 
 string ReadUTF8(string file)
 {
     Encoding win1251 = Encoding.GetEncoding("Windows-1251");
 
     return HttpUtility.HtmlDecode(win1251.GetString(File.ReadAllBytes(file)));
+}
+
+public class VKExport
+{
+    public List<Dialogue> dialogues = new();
+    public long timestamp;
 }
 
 public class Dialogue
