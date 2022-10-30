@@ -27,27 +27,27 @@ We don't accept any major contributions.
 All HTML messages data in an exported VK archive is converted to a single JSON file of this structure:
 ```json
 {
-	"dialogues":[
-		{
-			"id":127172472,
-			"title":"Николай Кушнаренко",
-			"messages":[
-				{
-					"sender":0,
-					"messageId":1234,
-					"timestamp":123456,
-					"body":"Привет, Николай",
-					"attachment":[
-						{
-							"name":"Фотография",
-							"url":"https://.../"
-						}
-					]
-				}
-			]
-		}
-	],
-	"timestamp":12345678
+  "dialogues": [
+    {
+      "id": 127172472,
+      "title": "Николай Кушнаренко",
+      "messages": [
+        {
+          "sender": 0,
+          "messageId": 1234,
+          "timestamp": 123456,
+          "body": "Привет, Николай",
+          "attachment": [
+            {
+              "name": "Фотография",
+              "url": "https://.../"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "timestamp": 12345678
 }
 ```
 
