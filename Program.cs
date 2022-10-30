@@ -4,13 +4,12 @@ using System.Globalization;
 using System.Text;
 using System.Web;
 
-var dialogues = Directory.EnumerateDirectories(@"C:\Users\kolya5544\Downloads\Archive (2)\messages").ToList();
-var myId = 127172472;
+var dialogues = Directory.EnumerateDirectories(Read("Enter full path to 'messages' folder in exported data")).ToList();
 
-Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+Encoding.RegisterProvider(CodePagesEncodingProvider.Instance); // not sure what it is for, but I guess it's something important
 
 VKExport vkmsgs = new();
-vkmsgs.timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+vkmsgs.timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds(); // grab the timestamp of when this export was converted to JSON
 dialogues.ForEach((z) =>
 {
     string dirname = z.Split('\\').Last();
@@ -37,7 +36,6 @@ dialogues.ForEach((z) =>
         {
             var l = htmlSnippet.DocumentNode.SelectSingleNode("//div[@class='ui_crumb']");
             title = l.InnerText;
-            Console.WriteLine(title);
         }
 
         var msgContainer = htmlSnippet.DocumentNode.SelectSingleNode("//div[@class='wrap_page_content']");
@@ -51,21 +49,18 @@ dialogues.ForEach((z) =>
             var senderNode = header.FirstChild;
 
             // figuring out SENDER
-            if (senderNode is null) { 
-                msg.sender = myId; 
-            } else {
-                var hrefVal = senderNode.GetAttributeValue<string>("href", "https://vk.com/id0");
-                string needle = "https://vk.com/id";
-                if (hrefVal.Contains("club")) needle = "https://vk.com/club";
-                if (hrefVal.Contains("public")) needle = "https://vk.com/public";
-                if (hrefVal.Contains("event")) needle = "https://vk.com/event";
-                int indx = hrefVal.IndexOf(needle);
-                int senderId = int.Parse(hrefVal.Substring(indx+needle.Length));
-                if (needle.Contains("club") ||
-                    needle.Contains("public")) senderId = -senderId;
-                if (needle.Contains("event")) senderId += 1000000000;
-                msg.sender = senderId;
-            }
+            var hrefVal = senderNode.GetAttributeValue<string>("href", "https://vk.com/id0");
+            string needle = "https://vk.com/id";
+            if (hrefVal.Contains("club")) needle = "https://vk.com/club";
+            if (hrefVal.Contains("public")) needle = "https://vk.com/public";
+            if (hrefVal.Contains("event")) needle = "https://vk.com/event";
+            int indx = hrefVal.IndexOf(needle);
+            int senderId = int.Parse(hrefVal.Substring(indx + needle.Length));
+            if (needle.Contains("club") ||
+                needle.Contains("public")) senderId = -senderId;
+            if (needle.Contains("event")) senderId += 1000000000;
+            msg.sender = senderId;
+
 
             // figuring out messageId
             int msgId = int.Parse(c.SelectSingleNode(".//div[@class='message']").GetAttributeValue<string>("data-id", "0"));
@@ -130,6 +125,12 @@ string ReadUTF8(string file)
     Encoding win1251 = Encoding.GetEncoding("Windows-1251");
 
     return HttpUtility.HtmlDecode(win1251.GetString(File.ReadAllBytes(file)));
+}
+
+string Read(string c)
+{
+    Console.Write($"{c}:");
+    return Console.ReadLine();
 }
 
 public class VKExport
