@@ -111,6 +111,17 @@ dialogues.ForEach((z) =>
                 });
             }
 
+            // figuring out invitations
+            var invitations = c.SelectSingleNode(".//a[@class='im_srv_lnk ']");
+            if (invitations is not null)
+            {
+                msg.attachment.Add(new Attachment()
+                {
+                    name = "Действие",
+                    url = c.SelectSingleNode(".//div[@class='kludges']").InnerText
+                });
+            }
+
             dlg.messages.Add(msg);
         });
     });
