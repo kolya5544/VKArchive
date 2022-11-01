@@ -12,7 +12,7 @@ VKExport vkmsgs = new();
 vkmsgs.timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds(); // grab the timestamp of when this export was converted to JSON
 dialogues.ForEach((z) =>
 {
-    string dirname = z.Split('\\').Last();
+    string dirname = z.Split(new char[] { '\\', '/' }).Last();
 
     Console.WriteLine($"Processing {dirname}...");
 
